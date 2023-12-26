@@ -18,8 +18,6 @@ void setup() {
   Serial.begin(115200);
   Serial.println("Slave startup");
 
-  pinMode(A0, INPUT_PULLUP);
-
   Wire.begin(1);
   Wire.onReceive(receiveEvent);
   Wire.onRequest(requestEvent);

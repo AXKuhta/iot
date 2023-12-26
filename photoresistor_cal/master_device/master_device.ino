@@ -7,8 +7,6 @@
 void setup() {
   Serial.begin(115200);
   Serial.println("Master startup");
-
-  pinMode(A0, INPUT_PULLUP);
   
   Wire.begin();
 }
