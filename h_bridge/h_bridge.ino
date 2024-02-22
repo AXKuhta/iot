@@ -121,30 +121,37 @@ void setup() {
   TCCR2B = 0b00000011;
 }
 
+static void drive(uint8_t direction, uint8_t power) {
+  if (direction) {
+    tim1_inhibit();
+    tim2_connect();
+    tim2_power(power);
+  } else {
+    tim2_inhibit();
+    tim1_connect();
+    tim1_power(power);
+  }
+}
+
 static void demo() {
-  tim1_inhibit();
-  tim2_connect();
-
   for (int i = 0; i <= 255; i++) {
-    tim2_power(i);
+    drive(0, i);
     delay(10);
   }
 
   for (int i = 255; i >= 0; i--) {
-    tim2_power(i);
+    drive(0, i);
     delay(10);
   }
   
-  tim2_inhibit();
-  tim1_connect();
   
   for (int i = 0; i <= 255; i++) {
-    tim1_power(i);
+    drive(1, i);
     delay(10);
   }
 
   for (int i = 255; i >= 0; i--) {
-    tim1_power(i);
+    drive(1, i);
     delay(10);
   }
 }
