@@ -1,6 +1,7 @@
 
 uint32_t sample_at;
-uint32_t tu = 10000;
+uint32_t write_at;
+uint32_t tu = 200000;
 
 void setup()
 {
@@ -52,6 +53,55 @@ static void display_digit(int idx) {
 }
 
 typedef struct { uint8_t k; char v; } entry_t;
+
+class Encoder {
+public:
+  uint8_t sequence = 0;
+  uint8_t count = 0;
+  uint8_t bit_pattern = 0;
+  uint8_t bit_count = 0;
+  bool busy = false;
+
+  void enqueue(uint8_t seq, uint8_t _count) {
+    if (busy) return;
+    sequence = seq;
+    count = _count;
+    busy = true;
+  }
+
+  void next_pattern() {
+    if (count == 0)
+      return;
+
+    uint8_t symbol = sequence & 1;
+    sequence >>= 1;
+    count--;
+
+    if (symbol) {
+      bit_pattern = 0b1000;
+      bit_count = 4;
+    } else {
+      bit_pattern = 0b10;
+      bit_count = 2;
+    }
+  }
+
+  bool level() {
+    if (bit_count == 0)
+      next_pattern();
+
+    if (bit_count == 0) {
+      busy = false;
+      return true;
+    }
+
+    uint8_t bit = bit_pattern & 1;
+    bit_pattern >>= 1;
+    bit_count--;
+
+    return bit;
+  }
+};
 
 // Декодер морзе
 class Decoder {
@@ -196,6 +246,7 @@ public:
                         decoder.dot();
                         break;
                       case 2:
+                      case 3:
                         decoder.dash();
                         break;
                       default:
@@ -237,6 +288,7 @@ public:
     }
 };
 
+Encoder enc;
 Receiver recv;
 
 void sample() {
@@ -246,11 +298,22 @@ void sample() {
   }
 }
 
+void write() {
+  if (micros() >= write_at) {
+    digitalWrite(3, enc.level());
+    write_at += tu;
+  }
+}
+
 void loop()
 {
   int val = analogRead(A5);
   int speed = map(val, 0, 1023, 0, 9);
   display_digit(speed);
+
+  if (millis() % 5000 == 0) {
+    enc.enqueue(0b110, 3);
+  }
 
   //for (int i = 0; i < 10; i++) {
   //  display_digit(i);
@@ -259,6 +322,7 @@ void loop()
   //display_digit(val / (1023 / 9));
   //delay(40);
   sample();
+  write();
 }
 
 // Синхронизация по спадам
