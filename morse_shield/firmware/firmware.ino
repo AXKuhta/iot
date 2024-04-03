@@ -1,7 +1,7 @@
 
 uint32_t sample_at;
 uint32_t write_at;
-uint32_t tu = 100000;
+uint32_t tu = 10000;
 
 void setup()
 {
@@ -274,10 +274,11 @@ public:
                     return;
                 case SPACE:
                     count++;
-                    if (count > 1) {
-                        //Serial.println("Event: transaction end");
-                        Serial.print(" ");
+                    if (count > 4) {
+                        Serial.println("[END]");
                         transition_to_idle();
+                    } else if (count == 4) {
+                        Serial.print(" ");
                     } else if (count == 1) {
                         decoder.flush();
                     }
@@ -293,7 +294,7 @@ public:
                         decoder.dash();
                         break;
                       default:
-                        Serial.println("Invalid mark");
+                        Serial.print(" [invalid mark] ");
                         break;
                     }
                     transition_to_space();
@@ -308,7 +309,7 @@ public:
         } else {
             switch (mode) {
                 case IDLE:
-                    //Serial.println("Event: transaction start");
+                    Serial.print("[START] ");
                     transition_to_mark();
                     return;
                 case SPACE:
