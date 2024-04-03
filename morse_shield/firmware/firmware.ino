@@ -1,7 +1,7 @@
 
 uint32_t sample_at;
 uint32_t write_at;
-uint32_t tu = 10000;
+uint32_t tu = 100000;
 
 void setup()
 {
@@ -52,48 +52,48 @@ static void display_digit(int idx) {
   digitalWrite(6, HIGH);
 }
 
-typedef struct { uint8_t k; char v; } entry_t;
+typedef struct { uint8_t k; char v; uint8_t led_states; } entry_t;
 
 entry_t alpha1[] = {
-  0b0, 'E',
-  0b1, 'T',
-  0, 0
+  0b0, 'E', 0b10111100,
+  0b1, 'T', 0b00111100,
+  0, 0, 0
 };
 
 entry_t alpha2[] = {
-  0b01, 'A',
-  0b00, 'I',
-  0b11, 'M',
-  0b10, 'N',
-  0, 0
+  0b01, 'A', 0b11111001,
+  0b00, 'I', 0b00000001,
+  0b11, 'M', 0b10011001,
+  0b10, 'N', 0b00011001,
+  0, 0, 0
 };
 
 entry_t alpha3[] = {
-  0b100, 'D',
-  0b110, 'G',
-  0b101, 'K',
-  0b111, 'O',
-  0b010, 'R',
-  0b000, 'S',
-  0b001, 'U',
-  0b011, 'W',
-  0, 0
+  0b100, 'D', 0b01011101,
+  0b110, 'G', 0b10101101,
+  0b101, 'K', 0b10111001,
+  0b111, 'O', 0b00011101,
+  0b010, 'R', 0b00011000,
+  0b000, 'S', 0b10110101,
+  0b001, 'U', 0b01101101,
+  0b011, 'W', 0b01110100,
+  0, 0, 0
 };
 
 entry_t alpha4[] = {
-  0b1000, 'B',
-  0b1010, 'C',
-  0b0010, 'F',
-  0b0000, 'H',
-  0b0111, 'J',
-  0b0100, 'L',
-  0b0110, 'P',
-  0b1101, 'Q',
-  0b0001, 'V',
-  0b1001, 'X',
-  0b1011, 'Y',
-  0b1100, 'Z',
-  0, 0
+  0b1000, 'B', 0b00111101,
+  0b1010, 'C', 0b10101100,
+  0b0010, 'F', 0b10111000,
+  0b0000, 'H', 0b00111001,
+  0b0111, 'J', 0b01001101,
+  0b0100, 'L', 0b00101100,
+  0b0110, 'P', 0b11111000,
+  0b1101, 'Q', 0b11110001,
+  0b0001, 'V', 0b01101101,
+  0b1001, 'X', 0b01111001,
+  0b1011, 'Y', 0b01110101,
+  0b1100, 'Z', 0b11011100,
+  0, 0, 0
 };
 
 class Encoder {
@@ -193,8 +193,13 @@ public:
 
   char lookup(entry_t tab[], uint8_t key) {
     for (int i = 0; tab[i].v; i++)
-      if (tab[i].k == key)
+      if (tab[i].k == key) {
+        digitalWrite(6, LOW);
+        shiftOut(7, 5, LSBFIRST, tab[i].led_states);
+        digitalWrite(6, HIGH);
+
         return tab[i].v;
+      }
 
     return '?';
   }
@@ -278,6 +283,9 @@ public:
                         Serial.println("[END]");
                         transition_to_idle();
                     } else if (count == 4) {
+                        digitalWrite(6, LOW);
+                        shiftOut(7, 5, LSBFIRST, 0);
+                        digitalWrite(6, HIGH);
                         Serial.print(" ");
                     } else if (count == 1) {
                         decoder.flush();
@@ -353,7 +361,9 @@ void loop()
 {
   int val = analogRead(A5);
   int speed = map(val, 0, 1023, 0, 9);
-  display_digit(speed);
+  //display_digit(speed);
+
+  tu = map(val, 0, 128, 10000, 1000000);
 
   if (Serial.available()) {
     if (enc.enqueue(Serial.peek()))
@@ -361,12 +371,6 @@ void loop()
 
   }
 
-  //for (int i = 0; i < 10; i++) {
-  //  display_digit(i);
-  //  delay(100);
-  //}
-  //display_digit(val / (1023 / 9));
-  //delay(40);
   sample();
   write();
 }
