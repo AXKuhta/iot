@@ -1,4 +1,3 @@
-
 class Decoder():
 	def __init__(self):
 		alpha1 = {
@@ -51,6 +50,9 @@ class Decoder():
 		self.value = (self.value << 1) + 1
 		self.count += 1
 
+	def space(self):
+		print(" ", end="")
+
 	def flush(self):
 		table = self.tables[self.count]
 		print(table[self.value], end="")
@@ -91,9 +93,11 @@ class Receiver():
 			# >2 TU HIGH		FLUSH WORD
 			if self.mode == "SPACE":
 				self.count += 1
-				if self.count > 1:
+				if self.count > 4:
 					print("\nEvent: transaction end", self.log)
 					self.transition_to_idle()
+				elif self.count == 4:
+					self.decoder.space()
 				elif self.count == 1:
 					self.decoder.flush()
 
@@ -101,7 +105,7 @@ class Receiver():
 				self.log.append(f"{self.count} mark")
 				if self.count == 1:
 					self.decoder.dot()
-				elif self.count == 2:
+				elif self.count == 2 or self.count == 3:
 					self.decoder.dash()
 				else:
 					raise Exception("Invalid mark")
