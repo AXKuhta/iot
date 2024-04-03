@@ -1,7 +1,7 @@
 
 uint32_t sample_at;
 uint32_t write_at;
-uint32_t tu = 200000;
+uint32_t tu = 100000;
 
 void setup()
 {
@@ -54,29 +54,108 @@ static void display_digit(int idx) {
 
 typedef struct { uint8_t k; char v; } entry_t;
 
+entry_t alpha1[] = {
+  0b0, 'E',
+  0b1, 'T',
+  0, 0
+};
+
+entry_t alpha2[] = {
+  0b01, 'A',
+  0b00, 'I',
+  0b11, 'M',
+  0b10, 'N',
+  0, 0
+};
+
+entry_t alpha3[] = {
+  0b100, 'D',
+  0b110, 'G',
+  0b101, 'K',
+  0b111, 'O',
+  0b010, 'R',
+  0b000, 'S',
+  0b001, 'U',
+  0b011, 'W',
+  0, 0
+};
+
+entry_t alpha4[] = {
+  0b1000, 'B',
+  0b1010, 'C',
+  0b0010, 'F',
+  0b0000, 'H',
+  0b0111, 'J',
+  0b0100, 'L',
+  0b0110, 'P',
+  0b1101, 'Q',
+  0b0001, 'V',
+  0b1001, 'X',
+  0b1011, 'Y',
+  0b1100, 'Z',
+  0, 0
+};
+
 class Encoder {
 public:
   uint8_t sequence = 0;
   uint8_t count = 0;
   uint8_t bit_pattern = 0;
   uint8_t bit_count = 0;
-  bool busy = false;
+  
+  bool exists(entry_t tab[], char value) {
+    for (int i = 0; tab[i].v; i++)
+      if (tab[i].v == value)
+        return true;
 
-  void enqueue(uint8_t seq, uint8_t _count) {
-    if (busy) return;
-    sequence = seq;
-    count = _count;
-    busy = true;
+    return false;
+  }
+
+  uint8_t lookup(entry_t tab[], char value) {
+    for (int i = 0; tab[i].v; i++)
+      if (tab[i].v == value)
+        return tab[i].k;
+
+    return 0;
+  }
+
+  bool enqueue(char c) {
+    if (bit_count)
+      return false;
+
+    if (c == ' ') {
+      bit_pattern = 0b11;
+      bit_count = 2;
+      return true;
+    } else if (exists(alpha1, c)) {
+      sequence = lookup(alpha1, c);
+      count = 1;
+    } else if (exists(alpha2, c)) {
+      sequence = lookup(alpha2, c);
+      count = 2;
+    } else if (exists(alpha3, c)) {
+      sequence = lookup(alpha3, c);
+      count = 3;
+    } else if (exists(alpha4, c)) {
+      sequence = lookup(alpha4, c);
+      count = 4;
+    } else {
+      Serial.println("Encoder: unknown letter");
+      return false;
+    }
+
+    next_pattern();
+
+    return true;
   }
 
   void next_pattern() {
     if (count == 0)
       return;
 
-    uint8_t symbol = sequence & 1;
-    sequence >>= 1;
     count--;
-
+    uint8_t symbol = sequence & (1 << count);
+    
     if (symbol) {
       bit_pattern = 0b1000;
       bit_count = 4;
@@ -84,20 +163,23 @@ public:
       bit_pattern = 0b10;
       bit_count = 2;
     }
+
+    if (count == 0) {
+      bit_pattern += 0b11 << bit_count;
+      bit_count += 2;
+    }
   }
 
   bool level() {
     if (bit_count == 0)
-      next_pattern();
-
-    if (bit_count == 0) {
-      busy = false;
       return true;
-    }
 
     uint8_t bit = bit_pattern & 1;
     bit_pattern >>= 1;
     bit_count--;
+
+    if (bit_count == 0)
+      next_pattern();
 
     return bit;
   }
@@ -106,53 +188,14 @@ public:
 // Декодер морзе
 class Decoder {
 public:
-  entry_t alpha1[2] = {
-    0b0, 'E',
-    0b1, 'T'
-  };
-
-  entry_t alpha2[4] = {
-    0b01, 'A',
-    0b00, 'I',
-    0b11, 'M',
-    0b10, 'N'
-  };
-
-  entry_t alpha3[8] = {
-    0b100, 'D',
-    0b110, 'G',
-    0b101, 'K',
-    0b111, 'O',
-    0b010, 'R',
-    0b000, 'S',
-    0b001, 'U',
-    0b011, 'W'
-  };
-
-  entry_t alpha4[12] = {
-    0b1000, 'B',
-    0b1010, 'C',
-    0b0010, 'F',
-    0b0000, 'H',
-    0b0111, 'J',
-    0b0100, 'L',
-    0b0110, 'P',
-    0b1101, 'Q',
-    0b0001, 'V',
-    0b1001, 'X',
-    0b1011, 'Y',
-    0b1100, 'Z'
-  };
-
   uint8_t value = 0;
   uint8_t count = 0;
 
-  char lookup(entry_t tab[], uint8_t key, size_t sz) {
-    for (int i = 0; i < sz; i++) {
-      if (tab[i].k == value) {
+  char lookup(entry_t tab[], uint8_t key) {
+    for (int i = 0; tab[i].v; i++)
+      if (tab[i].k == key)
         return tab[i].v;
-      }
-    }
+
     return '?';
   }
 
@@ -169,16 +212,16 @@ public:
   void flush() {
     switch (count) {
       case 1:
-        Serial.print(lookup(alpha1, value, 2));
+        Serial.print(lookup(alpha1, value));
         break;
       case 2:
-        Serial.print(lookup(alpha2, value, 4));
+        Serial.print(lookup(alpha2, value));
         break;
       case 3:
-        Serial.print(lookup(alpha3, value, 8));
+        Serial.print(lookup(alpha3, value));
         break;
       case 4:
-        Serial.print(lookup(alpha4, value, 12));
+        Serial.print(lookup(alpha4, value));
         break;
       default:
         Serial.println("Decoder: unknown length");
@@ -311,8 +354,10 @@ void loop()
   int speed = map(val, 0, 1023, 0, 9);
   display_digit(speed);
 
-  if (millis() % 5000 == 0) {
-    enc.enqueue(0b110, 3);
+  if (Serial.available()) {
+    if (enc.enqueue(Serial.peek()))
+      Serial.read();
+
   }
 
   //for (int i = 0; i < 10; i++) {
