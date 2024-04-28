@@ -325,16 +325,11 @@ void setup() {
 
   littlefs_init();
 
-  if (!read_credentials()) {
-    Serial.println("F1");
+  if (!read_credentials())
     device_setup();
-  };
     
-
-  while (!wifi_init()) {
-    Serial.println("f2");
+  while (!wifi_init())
     device_setup();
-  }
 
   ntp_init();
   tls_init();
