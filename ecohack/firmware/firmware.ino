@@ -1,11 +1,22 @@
+
+#include <FS.h>
+#include <LittleFS.h>
+#include <SoftwareSerial.h>
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
 #include <SdsDustSensor.h>    // https://github.com/lewapek/sds-dust-sensors-arduino-library/tree/master
 #include <time.h>             // https://forum.arduino.cc/t/ntp-server-doesnt-get-the-right-date-esp8266/938391/19
 
 
-const char SSID[] = "0";
-const char PASS[] = "00100011";
+// ====================================================================================================================
+// Runtime state
+// ====================================================================================================================
+SoftwareSerial bt_serial(D5, D6); // RX, TX
+
+const char* SSID = nullptr;
+const char* PASS = nullptr;
+const char* lat = nullptr;
+const char* lon = nullptr;
 
 const int mqtt_port = 8883;
 const char* mqtt_broker = "broker.emqx.io";
@@ -35,15 +46,145 @@ String ap_ssid_id() {
 }
 
 // ====================================================================================================================
+// Non-volatile memory
+// ====================================================================================================================
+
+const String file_credentials = R"(/credentials.txt)";
+
+void littlefs_init() {
+  if (!LittleFS.begin()) {
+    Serial.println("LittleFS initialization error, programmer flash configured?");
+    ESP.restart();
+  }
+}
+
+// https://github.com/esp8266/Arduino/blob/master/libraries/ESP8266WebServer/examples/HttpHashCredAuth/HttpHashCredAuth.ino
+int read_credentials() {
+  File f;
+  f=LittleFS.open(file_credentials,"r");
+  if(f){
+    Serial.println("Found SSID, PASS.");
+
+    String mod = f.readString();
+
+    int i1 = mod.indexOf('\n',0);
+    int i2 = mod.indexOf('\n', i1+1);
+    int i3 = mod.indexOf('\n', i2+1);
+    int i4 = mod.indexOf('\n', i3+1);
+
+    SSID = strdup( mod.substring(0, i1-1).c_str() );
+    PASS = strdup( mod.substring(i1+1,i2-1).c_str() );
+    lat = strdup( mod.substring(i2+1, i3-1).c_str() );
+    lon = strdup( mod.substring(i3+1,i4-1).c_str() );
+
+    Serial.print("[");
+    Serial.print(SSID);
+    Serial.println("]");
+
+    Serial.print("[");
+    Serial.print(PASS);
+    Serial.println("]");
+
+    Serial.print("[");
+    Serial.print(lat);
+    Serial.println("]");
+
+    Serial.print("[");
+    Serial.print(lon);
+    Serial.println("]");
+
+    f.close();
+
+    return 1;
+  } else {
+    return 0;
+  }
+}
+
+void save_credentials(String ssid_, String pass_, String lat_, String lon_) {
+  File f = LittleFS.open(file_credentials, "w");  // open as a brand new file, discard old contents
+  if (f) {
+    f.println(ssid_);
+    f.println(pass_);
+    f.println(lat_);
+    f.println(lon_);
+    f.close();
+
+    Serial.println("Credentials saved.");
+  } else {
+    Serial.println("LittleFS error");
+
+    while (1) {}
+  }
+}
+
+void device_setup() {
+  Serial.print("Device setup\n");
+  bt_serial.begin(9600);
+
+  while (!bt_serial.available()) {
+
+  }
+
+  String ssid_ = bt_serial.readStringUntil('\n');
+  String pass_ = bt_serial.readStringUntil('\n');
+  String lat_ = bt_serial.readStringUntil('\n');
+  String lon_ = bt_serial.readStringUntil('\n');
+
+  Serial.println("Have:");
+
+  Serial.print("[");
+  Serial.print(ssid_);
+  Serial.println("]");
+
+  Serial.print("[");
+  Serial.print(pass_);
+  Serial.println("]");
+
+  Serial.print("[");
+  Serial.print(lat_);
+  Serial.println("]");
+
+  Serial.print("[");
+  Serial.print(lon_);
+  Serial.println("]");
+
+  SSID = strdup( ssid_.c_str() );
+  PASS = strdup( pass_.c_str() );
+
+  save_credentials(ssid_, pass_, lat_, lon_);
+
+  bt_serial.println("OK");
+  bt_serial.flush();
+  bt_serial.end();
+}
+
+// ====================================================================================================================
 // WiFi
 // ====================================================================================================================
-void wifi_init() {
-  WiFi.begin(SSID, PASS);
-
+int wifi_reconnect(int grace_period) {
   while( WiFi.status() != WL_CONNECTED ) {
     digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
     delay(100);
-  };
+
+    grace_period--;
+
+    if (grace_period == 0)
+     return 0;
+  }
+
+  return 1;
+}
+
+int wifi_init() {
+  WiFi.begin(SSID, PASS);
+  return wifi_reconnect(200);
+}
+
+// WiFi lost and not recovering - restart to setup mode
+void wifi_handle() {
+  if (!wifi_reconnect(500))
+    ESP.reset();
 }
 
 // ====================================================================================================================
@@ -182,7 +323,19 @@ void setup() {
   Serial.begin(115200);
   Serial.print("System startup\n");
 
-  wifi_init();
+  littlefs_init();
+
+  if (!read_credentials()) {
+    Serial.println("F1");
+    device_setup();
+  };
+    
+
+  while (!wifi_init()) {
+    Serial.println("f2");
+    device_setup();
+  }
+
   ntp_init();
   tls_init();
   mqtt_init();
@@ -223,6 +376,7 @@ void publish_dust(float pm25, float pm10) {
 }
 
 void loop() {
+  wifi_handle();
   mqtt_handle();
 
   PmResult pm = sds.readPm();
