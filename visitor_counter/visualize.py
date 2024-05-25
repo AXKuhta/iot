@@ -182,6 +182,7 @@ def v6():
 			self.origin = 0
 			self.destination = 0
 			self.event_log = []
+			self.angle = []
 
 		def in_rect(self, x, y):
 			return self.x1 < x < self.x2 and self.y1 < y < self.y2
@@ -223,6 +224,26 @@ def v6():
 			else:
 				self.event_log.append(None)
 
+			a = np.arctan2(-(x - self.x_), self.y_ - y) * (180 / np.pi)
+
+			if a < 0:
+				a = 360 + a
+
+			angle_dir = 0
+
+			if a < 45 or a >= 315:
+				angle_dir = 0
+			elif 45 <= a < 135:
+				angle_dir = 3
+			elif 135 <= a < 225:
+				angle_dir = 1
+			elif 225 <= a < 315:
+				angle_dir = 2
+			else:
+				assert 0
+
+			self.angle.append(angle_dir)
+
 			self.x_ = x
 			self.y_ = y
 
@@ -241,6 +262,7 @@ def v6():
 	axes.step(time, x, label="x (m)")
 	axes.step(time, y, label="y (m)")
 	axes.step(time, v, label="v (m/s)")
+	axes.step(time, machine.angle, label="a (deg az)")
 
 	for t, event in zip(time, machine.event_log):
 		if event:
