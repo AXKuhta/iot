@@ -1,0 +1,36 @@
+
+* {
+	box-sizing: border-box;
+}
+
+body {
+	font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+	font-size: 20px;
+
+	color: #202020;
+
+	margin: 0;
+}
+
+input {
+	font-size: inherit;
+}
+
+header {
+	background-color: #202020;
+	color: #A0A0A0;
+}
+
+header h1 {
+	margin: 0;
+	padding: 1rem 0rem;
+}
+
+.content {
+	max-width: 48rem;
+	margin: 0 auto;
+}
+
+.hide {
+	display: none;
+}
