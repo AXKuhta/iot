@@ -1,5 +1,6 @@
 import paho.mqtt.client as paho
 from time import sleep
+import struct
 import zlib
 
 #def send_command(cmd):
@@ -21,10 +22,17 @@ def handle_message_fn(client, userdata, message):
 	elif topic.endswith("rawdata"):
 		try:
 			rawdata = zlib.decompress(payload)
-			print("rawdata:\n", rawdata.decode())
-			print(len(payload), "bytes gzip;", len(rawdata), "bytes plaintext")
+			assert len(rawdata) % 32 == 0
+			frames = len(rawdata) // 32
+
+			for i in range(frames):
+				frame = rawdata[32*i:32*i+32]
+				x1, y1, v1, r1, x2, y2, v2, r2, x3, y3, v3, r3, t = struct.unpack("hhhhhhhhhhhhd", frame)
+				print(t, x1, y1, v1, r1, x2, y2, v2, r2, x3, y3, v3, r3, sep=",")
+
+			print(len(payload), "bytes gzip;", len(rawdata), "bytes raw")
 		except Exception as e:
-			print("rawdata: malformed", len(payload))
+			print("rawdata: malformed", len(payload), e)
 	elif topic.endswith("telemetry"):
 		print("telemetry:", payload.decode())
 	else:
