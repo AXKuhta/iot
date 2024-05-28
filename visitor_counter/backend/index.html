@@ -18,19 +18,41 @@
 		<div class="content">
 			<div class="account hide">
 				<h2>Welcome</h2>
-				<p>Logged in as <span class="username"></span></p>
-				<form action="/logout" method="post">
+				<p>Logged in as <b class="username"></b></p>
+				<form action="/logout" method="post" onsubmit="return handle_sign_out(this), false">
 					<input type="submit" value="Log out">
+					<p><output name="status"></output></p>
 				</form>
 			</div>
 
 			<div class="front_page hide">
+				<h2>Welcome!</h2>
+				<p>This is the control panel for ESP32-LD2450 visitor counters. Looking to buy one? Check out <a href="">our store.</a> Already have one? Please sign in or create an account below!</p>
+				<img src="static/box_svg0001.svg">
 				<h2>Log in</h2>
-				<form action="/login" method="post">
+				<form action="/login" method="post" onsubmit="return handle_sign_in(this), false">
 					<input type="text" name="username" placeholder="Username...">
 					<input type="password" name="password" placeholder="Password...">
-					<input type="submit">
+					<input type="submit" value="Sign in">
+					<p><output name="status"></output></p>
 				</form>
+				<p>Or <a href="/sign_up" onclick="return show_sign_up_page(), false">create an account...</a></p>
+			</div>
+
+			<div class="sign_up hide">
+				<h2>Create an account</h2>
+				<p>Please fill out the form below. <a href="/" onclick="return show_front_page(), false">Back...</a></p>
+				<form action="/register" method="post" onsubmit="return request_account_creation(this), false">
+					<input type="text" name="username" placeholder="Username..." required>
+					<input type="password" name="password" placeholder="Password..." required>
+					<input type="submit" value="Confirm">
+					<p><output name="status"></output></p>
+				</form>
+			</div>
+
+			<div class="sign_up_success hide">
+				<h2>Account creation complete</h2>
+				<p>Please sign into your new account on <a href="/" onclick="return show_front_page(), false">the main page!</a></p>
 			</div>
 		</div>
 	</main>
