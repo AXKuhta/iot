@@ -74,6 +74,63 @@ async function refresh_device_list() {
 	}
 }
 
-function init_device_page(device_id) {
+async function init_device_page() {
+	var device_id_box = app.device_page.querySelector(".device_id")
+	var userlabel_box = app.device_page.querySelector(".userlabel")
 
+	device_id_box.innerText = app.device_page_state.device_id
+
+	try {
+		var request = await fetch("/devices/" + app.device_page_state.device_id, {
+			method: "GET"
+		})
+	} catch (e) {
+		return
+	}
+
+	if (request.status == 200) {
+		var info = await request.json()
+
+		userlabel_box.innerText = info.userlabel
+	} else {
+		var response = await request.json()
+		console.log(response)
+	}
+
+	refresh_device_page()
+}
+
+async function refresh_device_page() {
+	var time = app.device_page.querySelector(".time")
+	var u = app.device_page.querySelector(".u")
+	var d = app.device_page.querySelector(".d")
+	var l = app.device_page.querySelector(".l")
+	var r = app.device_page.querySelector(".r")
+
+	try {
+		var request = await fetch("/devices/" + app.device_page_state.device_id, {
+			method: "GET"
+		})
+	} catch (e) {
+		return
+	}
+
+	if (request.status == 200) {
+		var info = await request.json()
+
+		time.innerText = timefmt.format(new Date(info.data.time))
+		u.innerText = +info.data.u
+		d.innerText = +info.data.d
+		l.innerText = +info.data.l
+		r.innerText = +info.data.r
+	} else {
+		var response = await request.json()
+		console.log(response)
+	}
+
+	if (app.device_page.classList.contains("hide")) {
+		// Stop
+	} else {
+		setTimeout(refresh_device_page, 5000)
+	}
 }

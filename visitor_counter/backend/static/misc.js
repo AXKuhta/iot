@@ -26,3 +26,8 @@ function ago(time) {
 
 	return formatter.format(-Math.floor(delta), unit)
 }
+
+var timefmt = new Intl.DateTimeFormat(undefined, {
+	dateStyle: "medium",
+	timeStyle: "short",
+})

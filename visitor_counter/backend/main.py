@@ -205,6 +205,31 @@ def list_devices(current_user: User = Depends(get_current_user), db: Session = D
 
 	return device_list
 
+@app.get("/devices/{device_id}")
+def device_info(device_id: str, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+	device = get_device_by_device_id(db, device_id)
+	data = db.query(AMessage).filter(AMessage.device == device).order_by(AMessage.id.desc()).first()
+
+	if device is None:
+		raise HTTPException(400, "Device not found")
+
+	if device.user != current_user:
+		raise HTTPException(401, "Access denied")
+
+	return {
+		"device_id": device.device_id,
+		"userlabel": device.userlabel,
+		"last_seen_healthy": device.last_seen_healthy.isoformat().replace("T", "Z"),
+		"data": {
+			"time": data.time.isoformat().replace("T", "Z"),
+			"u": data.u,
+			"d": data.d,
+			"l": data.l,
+			"r": data.r
+		}
+	}
+	
+
 #######################################################################################
 # MQTT
 #######################################################################################

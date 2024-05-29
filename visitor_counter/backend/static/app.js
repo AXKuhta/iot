@@ -9,7 +9,10 @@ var app = {
 	sign_up_page: HTMLElement.prototype,
 	sign_up_success_page: HTMLElement.prototype,
 	add_device_page: HTMLElement.prototype,
-	device_page: HTMLElement.prototype
+	device_page: HTMLElement.prototype,
+	device_page_state: {
+		device_id: ""
+	}
 }
 
 function hide_all() {
@@ -58,12 +61,14 @@ function show_add_device_page() {
 }
 
 function show_device_page(device) {
-	var device_id = device.querySelector(".device_id")
+	var device_id = device.querySelector(".device_id").innerText
+
+	app.device_page_state.device_id = device_id
 
 	hide_all()
 	app.device_page.classList.remove("hide")
 
-	init_device_page(device_id)
+	init_device_page()
 }
 
 function app_init() {

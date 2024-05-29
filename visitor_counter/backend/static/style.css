@@ -78,3 +78,7 @@ img {
 .muted {
 	opacity: 0.5;
 }
+
+.visitors4 td {
+	min-width: 4rem;
+}
