@@ -6,6 +6,8 @@
 	<title>Document</title>
 	<link rel="stylesheet" href="static/style.css">
 	<script src="static/account.js"></script>
+	<script src="static/device.js"></script>
+	<script src="static/misc.js"></script>
 	<script src="static/app.js"></script>
 </head>
 <body>
@@ -16,19 +18,10 @@
 	</header>
 	<main>
 		<div class="content">
-			<div class="account hide">
-				<h2>Welcome</h2>
-				<p>Logged in as <b class="username"></b></p>
-				<form action="/logout" method="post" onsubmit="return handle_sign_out(this), false">
-					<input type="submit" value="Log out">
-					<p><output name="status"></output></p>
-				</form>
-			</div>
-
 			<div class="front_page hide">
 				<h2>Welcome!</h2>
 				<p>This is the control panel for ESP32-LD2450 visitor counters. Looking to buy one? Check out <a href="">our store.</a> Already have one? Please sign in or create an account below!</p>
-				<img src="static/box_svg0001.svg">
+				<img src="static/box_new.svg">
 				<h2>Log in</h2>
 				<form action="/login" method="post" onsubmit="return handle_sign_in(this), false">
 					<input type="text" name="username" placeholder="Username...">
@@ -53,6 +46,64 @@
 			<div class="sign_up_success hide">
 				<h2>Account creation complete</h2>
 				<p>Please sign into your new account on <a href="/" onclick="return show_front_page(), false">the main page!</a></p>
+			</div>
+
+			<div class="account hide">
+				<h2>Welcome</h2>
+				<p>Logged in as <b class="username"></b></p>
+				<form action="/logout" method="post" onsubmit="return handle_sign_out(this), false">
+					<input type="submit" value="Log out">
+					<p><output name="status"></output></p>
+				</form>
+				<table>
+					<tr>
+						<td class="w-max"><h2>List of devices</h2></td>
+						<td><button onclick="show_add_device_page()">Add a new device...</button></td>
+					</tr>
+				</table>
+				<div class="device-list">
+					<div class="device-list-entry hide" onclick="show_device_page(this)">
+						<table>
+							<tr>
+								<td class="device-icon"></td>
+								<td class="w-max">
+									<div>
+										<h3 class="userlabel">Front door tracker</h3>
+									</div>
+									<div>
+										Last seen healthy: <span class="lsh">1 minute ago</span>
+									</div>
+									<div class="muted">
+										Device ID: <span class="device_id">ESP32-LD2450-MMMM</span>
+									</div>
+								</td>
+								<td>
+									<h1>0</h1><b>in</b> 
+								</td>
+								<td>
+									<h1>0</h1><b>out</b>
+								</td>
+							</tr>
+						</table>
+					</div>
+				</div>
+			</div>
+
+			<div class="add_device hide">
+				<h2>Add a new device</h2>
+				<p>Please ensure the device has been set up and is connected to a network. If you haven't gone through the <a href="">first power-up and initial configuration steps,</a> please do so now. <a href="/" onclick="return fetch_user_account(), false">Back...</a></p>
+				<form action="/add_device" method="post" onsubmit="return request_device_claim(this), false">
+					<input type="text" name="device_id" placeholder="Device ID..." required>
+					<input type="text" name="userlabel" placeholder="[OPTIONAL] Label..." required>
+					<input type="submit" value="Confirm">
+					<p><output name="status"></output></p>
+				</form>
+			</div>
+
+			<div class="device hide">
+				<h3>Device: <span class="userlabel">Front door tracker</span></h3>
+				<div>Device ID <span class="device_id">ESP32-LD2450-MMMM</span></div>
+				<p><a href="/" onclick="return fetch_user_account(), false">Back...</a></p>
 			</div>
 		</div>
 	</main>

@@ -6,7 +6,7 @@ from fastapi.responses import *
 
 from fastapi_mqtt import MQTTConfig, FastMQTT
 from sqlalchemy.orm import sessionmaker, Session
-from pydantic import BaseModel
+from dataclasses import dataclass
 
 import bcrypt
 import jwt
@@ -76,9 +76,21 @@ def get_db():
 def get_user_by_username(db: Session, username: str):
 	return db.query(User).filter(User.username == username).first()
 
-class UserCreateJSON(BaseModel):
-    username: str
-    password: str
+def get_device_by_device_id(db: Session, device_id: str):
+	return db.query(Device).filter(Device.device_id == device_id).first()
+
+def get_devices_by_user(db: Session, user: User):
+	return db.query(Device).filter(Device.user == user).all()
+
+@dataclass
+class UserCreateJSON():
+	username: str
+	password: str
+
+@dataclass
+class AddDeviceFORM():
+	device_id: str = Form(...)
+	userlabel: str = Form(...)
 
 #######################################################################################
 # Registration, cookie based authentication
@@ -158,34 +170,77 @@ def read_users_me(current_user: User = Depends(get_current_user)):
 	return {"username": current_user.username}
 
 #######################################################################################
+# Device registration, relinquishment, list
+#######################################################################################
+
+@app.post("/add_device")
+def add_device(params: AddDeviceFORM = Depends(), current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+	device = get_device_by_device_id(db, params.device_id)
+
+	if device is None:
+		raise HTTPException(400, "Device not found, make sure it is powered and connected to a network")
+
+	if device.user is not None:
+		if device.user == current_user:
+			raise HTTPException(400, "Device already assigned to you")
+		else:	
+			raise HTTPException(400, "Device already assigned to somebody else")
+
+	device.user = current_user
+	db.commit()
+
+	return {"status": "ok"}
+
+@app.post("/list_devices")
+def list_devices(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+	devices = get_devices_by_user(db, current_user)
+
+	device_list = [
+		{
+			"device_id": x.device_id,
+			"userlabel": x.userlabel,
+			"last_seen_healthy": x.last_seen_healthy.isoformat().replace("T", "Z")
+		}
+	for x in devices]
+
+	return device_list
+
+#######################################################################################
 # MQTT
 #######################################################################################
 
-@fast_mqtt.subscribe("axkuhta/+/sensors")
-async def collect_data(client, topic, payload, qos, properties, db: Session = Depends(get_db)):
+@fast_mqtt.subscribe("axkuhta/+/visitors4")
+async def handle_visitors4_data(client, topic, payload, qos, properties, db: Session = SessionLocal()):
 	try:
 		payload_json = json.loads(payload.decode())
 
-		device_time = payload_json["device_timestamp"]
-		u = payload_json["visitors_u"]
-		d = payload_json["visitors_d"]
-		l = payload_json["visitors_l"]
-		r = payload_json["visitors_r"]
+		device_time = datetime.fromisoformat( payload_json["device_timestamp"] )
+		u = payload_json["u"]
+		d = payload_json["d"]
+		l = payload_json["l"]
+		r = payload_json["r"]
 
-		AMessage(time=device_time, u=u, d=d, l=l, r=r)
-
-		"""
-		with sessionmaker(bind=db_engine)() as session:
-		device = session.query(Device).filter(Device.name == device_name).first()
-		if device is not None:
-		record = Record(device_id=device.id, temperature=temperature, humidity=humidity,
-		radioactivity=radioactivity, pm25=pm25, pm10=pm10, noisiness=noisiness,
-		time=datetime.strptime(timestamp, "%Y-%m-%dT%H:%M:%S.%f"))
-		session.add(record)
-		device.is_active = True
-		session.commit()
-		"""
 	except Exception as e:
-		print(f"[Data] invalid data from {topic}: {e}")
+		print(f"[Visitors4] invalid data from {topic}: {e}")
+
+	device_id = topic.split("/")[-2]
+
+	device = get_device_by_device_id(db, device_id)
+
+	if device is None:
+		device = Device(device_id=device_id, userlabel="", last_seen_healthy=datetime.utcnow())
+		db.add(device)
+
+		print(f"[Visitors4] new device online: {device_id}")
+	else:
+		device.last_seen_healthy = datetime.utcnow()
+
+	if device.user is not None:
+		message = AMessage(time=device_time, u=u, d=d, l=l, r=r)
+		message.device = device
+		db.add(message)
+
+	db.commit()
+	db.close()
 
 # uvicorn main:app --reload

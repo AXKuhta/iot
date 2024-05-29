@@ -22,10 +22,9 @@ class Device(Base):
 	__tablename__ = "devices"
 
 	id = Column(Integer, primary_key=True, autoincrement=True)
-	name = Column(String(255), nullable=False, unique=True)
-	latitude = Column(Float, nullable=False)
-	longitude = Column(Float, nullable=False)
-	is_active = Column(Boolean, nullable=False, default=False)
+	device_id = Column(String(255), nullable=False, unique=True)
+	userlabel = Column(String(255), nullable=False)
+	last_seen_healthy = Column(TIMESTAMP, nullable=False)
 	user_id = Column(Integer, ForeignKey('users.id'))
 	user = relationship("User", back_populates="devices")
 	amessages = relationship("AMessage", back_populates="device")

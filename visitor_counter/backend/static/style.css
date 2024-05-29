@@ -9,7 +9,7 @@ body {
 	margin: 0;
 }
 
-input {
+input, button {
 	font-size: inherit;
 }
 
@@ -33,4 +33,48 @@ img {
 
 .hide {
 	display: none;
+}
+
+.w-max {
+	width: 100%;
+}
+
+.device-icon {
+	mask-image: url(box_plugged_v2.svg);
+	-webkit-mask-image: url(box_plugged_v2.svg);
+	mask-size: cover;
+
+	background-color: #202020;
+}
+
+.device-list-entry {
+	margin: 1rem 0;
+	padding: .5rem 0;
+}
+
+.device-list-entry h3 {
+	margin: 0;
+}
+
+.device-list-entry h1 {
+	margin: 0;
+}
+
+.device-list-entry td {
+	padding: 0 1rem;
+}
+
+.device-list-entry:hover {
+	background-color: #388DD9;
+	color: #F0F0F0;
+
+	cursor: pointer;
+}
+
+.device-list-entry:hover .device-icon {
+	background-color: #F0F0F0;
+}
+
+.muted {
+	opacity: 0.5;
 }
