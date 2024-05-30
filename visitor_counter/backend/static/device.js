@@ -61,6 +61,8 @@ async function refresh_device_list() {
 
 		device_list.replaceChildren(...new_children)
 
+	} else if (request.status == 401) {
+		return fetch_user_account()
 	} else {
 		var response = await request.json()
 		console.log(response)
@@ -123,6 +125,8 @@ async function refresh_device_page() {
 		d.innerText = +info.data.d
 		l.innerText = +info.data.l
 		r.innerText = +info.data.r
+	} else if (request.status == 401) {
+		return fetch_user_account()
 	} else {
 		var response = await request.json()
 		console.log(response)

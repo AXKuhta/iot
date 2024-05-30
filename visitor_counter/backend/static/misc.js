@@ -9,19 +9,21 @@ function ago(time) {
 
 	delta /= 1000
 
+	console.log(delta)
+
 	if (delta >= 60) {
 		delta /= 60
 		unit = "minutes"
-	}
 
-	if (delta >= 60) {
-		delta /= 60
-		unit = "hours"
-	}
+		if (delta >= 60) {
+			delta /= 60
+			unit = "hours"
 
-	if (delta >= 24) {
-		delta /= 24
-		unit = "days"
+			if (delta >= 24) {
+				delta /= 24
+				unit = "days"
+			}
+		}
 	}
 
 	return formatter.format(-Math.floor(delta), unit)
