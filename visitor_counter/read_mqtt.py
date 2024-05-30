@@ -19,13 +19,16 @@ def handle_message_fn(client, userdata, message):
 
 	print(topic, end=": ")
 
-	if topic.endswith("sensors"):
-		print("visitors:", payload.decode())
+	if topic.endswith("visitors4"):
+		print()
+		print(payload.decode())
 	elif topic.endswith("rawdata"):
 		try:
 			rawdata = zlib.decompress(payload)
 			assert len(rawdata) % 32 == 0
 			frames = len(rawdata) // 32
+
+			print()
 
 			for i in range(frames):
 				frame = rawdata[32*i:32*i+32]
@@ -54,7 +57,7 @@ client.loop_start()
 
 # axkuhta/esp32_ld2450_eed5/sensors
 print("Subscribing")
-client.subscribe("axkuhta/+/sensors")
+client.subscribe("axkuhta/+/visitors4")
 client.subscribe("axkuhta/+/rawdata")
 client.subscribe("axkuhta/+/telemetry")
 input("Press enter to exit")
