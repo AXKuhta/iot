@@ -1,5 +1,6 @@
 from time import sleep, strftime, gmtime, struct_time
 import paho.mqtt.client as paho
+import random
 import struct
 import json
 import zlib
@@ -17,10 +18,13 @@ client.tls_set("broker.emqx.io-ca.crt")
 client.connect(broker, port)
 client.loop_start()
 
+runtime_random_id = random.randint(0, 0xFFFFFFFF)
+
 def publish_mock_message():
 	device_timestamp = strftime("%Y-%m-%d %H:%M:%S", struct_time(gmtime()))
 
 	message = {
+		"runtime_random_id": runtime_random_id,
 		"device_timestamp": device_timestamp,
 		"u": 0,
 		"d": 0,

@@ -45,6 +45,8 @@ img {
 	mask-size: cover;
 
 	background-color: #202020;
+
+	min-width: .1rem;
 }
 
 .device-list-entry {

@@ -175,7 +175,10 @@ def read_users_me(current_user: User = Depends(get_current_user)):
 
 @app.post("/add_device")
 def add_device(params: AddDeviceFORM = Depends(), current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-	device = get_device_by_device_id(db, params.device_id)
+	device_id = params.device_id
+	userlabel = params.userlabel
+
+	device = get_device_by_device_id(db, device_id)
 
 	if device is None:
 		raise HTTPException(400, "Device not found, make sure it is powered and connected to a network")
@@ -187,6 +190,7 @@ def add_device(params: AddDeviceFORM = Depends(), current_user: User = Depends(g
 			raise HTTPException(400, "Device already assigned to somebody else")
 
 	device.user = current_user
+	device.userlabel = userlabel
 	db.commit()
 
 	return {"status": "ok"}

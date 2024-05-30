@@ -94,7 +94,7 @@
 				<p>Please ensure the device has been set up and is connected to a network. If you haven't gone through the <a href="">first power-up and initial configuration steps,</a> please do so now. <a href="/" onclick="return fetch_user_account(), false">Back...</a></p>
 				<form action="/add_device" method="post" onsubmit="return request_device_claim(this), false">
 					<input type="text" name="device_id" placeholder="Device ID..." required>
-					<input type="text" name="userlabel" placeholder="[OPTIONAL] Label..." required>
+					<input type="text" name="userlabel" placeholder="Label..." required>
 					<input type="submit" value="Confirm">
 					<p><output name="status"></output></p>
 				</form>
