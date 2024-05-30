@@ -27,19 +27,20 @@ class Device(Base):
 	last_seen_healthy = Column(TIMESTAMP, nullable=False)
 	user_id = Column(Integer, ForeignKey('users.id'))
 	user = relationship("User", back_populates="devices")
-	amessages = relationship("AMessage", back_populates="device")
+	vis4messages = relationship("VIS4Message", back_populates="device")
 
-class AMessage(Base):
-	__tablename__ = 'amessages'
+class VIS4Message(Base):
+	__tablename__ = 'vis4messages'
 
 	id = Column(Integer, primary_key=True, autoincrement=True)
 	device_id = Column(Integer, ForeignKey('devices.id'), nullable=False)
+	runtime_random_id = Column(Integer, nullable=False)
 	time = Column(TIMESTAMP, nullable=False)
 	u = Column(Integer, nullable=False)
 	d = Column(Integer, nullable=False)
 	l = Column(Integer, nullable=False)
 	r = Column(Integer, nullable=False)
 
-	device = relationship("Device", back_populates="amessages")
+	device = relationship("Device", back_populates="vis4messages")
 
 Base.metadata.create_all(bind=db_engine)

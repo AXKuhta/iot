@@ -205,10 +205,13 @@ def list_devices(current_user: User = Depends(get_current_user), db: Session = D
 
 	return device_list
 
+# db.query(VIS4Message.runtime_random_id, func.max(VIS4Message.id), VIS4Message.d).group_by(VIS4Message.runtime_random_id).all()
+# db.query(VIS4Message.runtime_random_id, VIS4Message.id, VIS4Message.d).group_by(VIS4Message.runtime_random_id).having(func.max(VIS4Message.id)).all()
+
 @app.get("/devices/{device_id}")
 def device_info(device_id: str, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
 	device = get_device_by_device_id(db, device_id)
-	data = db.query(AMessage).filter(AMessage.device == device).order_by(AMessage.id.desc()).first()
+	data = db.query(VIS4Message).filter(VIS4Message.device == device).order_by(VIS4Message.id.desc()).first()
 
 	if device is None:
 		raise HTTPException(400, "Device not found")
@@ -240,6 +243,7 @@ async def handle_visitors4_data(client, topic, payload, qos, properties, db: Ses
 		payload_json = json.loads(payload.decode())
 
 		device_time = datetime.fromisoformat( payload_json["device_timestamp"] )
+		runtime_random_id = payload_json["runtime_random_id"]
 		u = payload_json["u"]
 		d = payload_json["d"]
 		l = payload_json["l"]
@@ -261,11 +265,11 @@ async def handle_visitors4_data(client, topic, payload, qos, properties, db: Ses
 		device.last_seen_healthy = datetime.utcnow()
 
 	if device.user is not None:
-		message = AMessage(time=device_time, u=u, d=d, l=l, r=r)
+		message = VIS4Message(runtime_random_id=runtime_random_id, time=device_time, u=u, d=d, l=l, r=r)
 		message.device = device
 		db.add(message)
 
 	db.commit()
 	db.close()
 
-# uvicorn main:app --reload
+# uvicorn main:app --reload --timeout-keep-alive 30
