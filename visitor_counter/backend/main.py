@@ -8,6 +8,7 @@ from fastapi_mqtt import MQTTConfig, FastMQTT
 from sqlalchemy.orm import sessionmaker, Session
 from dataclasses import dataclass
 
+from sqlalchemy import func
 import sqlalchemy
 
 import bcrypt
@@ -88,6 +89,10 @@ def get_devices_by_user(db: Session, user: User):
 class UserCreateJSON():
 	username: str
 	password: str
+
+@dataclass
+class VisitorsRqJSON():
+	from_utc_ts: int
 
 @dataclass
 class AddDeviceFORM():
@@ -224,13 +229,14 @@ def list_devices(current_user: User = Depends(get_current_user), db: Session = D
 @app.get("/devices/{device_id}")
 def device_info(device_id: str, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
 	device = get_device_by_device_id(db, device_id)
-	data = db.query(VIS4Message).filter(VIS4Message.device == device).order_by(VIS4Message.id.desc()).first()
 
 	if device is None:
 		raise HTTPException(400, "Device not found")
 
 	if device.user != current_user:
 		raise HTTPException(401, "Access denied")
+
+	data = db.query(VIS4Message).filter(VIS4Message.device == device).order_by(VIS4Message.id.desc()).first()
 
 	return {
 		"device_id": device.device_id,
@@ -245,6 +251,63 @@ def device_info(device_id: str, current_user: User = Depends(get_current_user), 
 			"r": data.r
 		} if data is not None else None
 	}
+
+@app.post("/devices/{device_id}/visitors")
+def device_visitors(device_id: str, params:VisitorsRqJSON, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+	device = get_device_by_device_id(db, device_id)
+
+	if device is None:
+		raise HTTPException(400, "Device not found")
+
+	if device.user != current_user:
+		raise HTTPException(401, "Access denied")
+
+	data = db.query(VIS4Message).filter(VIS4Message.device == device).group_by(VIS4Message.time >= datetime.fromtimestamp(params.from_utc_ts)).having(func.max(VIS4Message.time)).all()
+
+	if len(data) == 2:
+		a = data[0]
+		b = data[1]
+		ut = b.u - a.u
+		dt = b.d - a.d
+		lt = b.l - a.l
+		rt = b.r - a.r
+	elif len(data) == 1:
+		a = data[0]
+		b = data[0]
+		ut = b.u
+		dt = b.d
+		lt = b.l
+		rt = b.r
+	else:
+		raise HTTPException(400, "??")
+
+	"""
+	return {
+		"atime": a.time,
+		"btime": b.time,
+		"after": {
+			"u": ut,
+			"d": dt,
+			"l": lt,
+			"r": rt
+		},
+		"total": {
+			"u": b.u,
+			"d": b.d,
+			"l": b.l,
+			"r": b.r,
+		}
+	}
+	"""
+
+	directions = {
+		"u": { "today": ut, "total": b.u },
+		"d": { "today": dt, "total": b.d },
+		"l": { "today": lt, "total": b.l },
+		"r": { "today": rt, "total": b.r },
+	}
+
+	return directions[device.direction_of_entrance]
 
 @app.post("/devices/{device_id}/settings")
 def device_settings(device_id: str, params: DeviceSettingsFORM = Depends(), current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):

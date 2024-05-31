@@ -27,9 +27,37 @@ async function request_device_claim(form) {
 	}
 }
 
+async function fetch_visitors_from(device_id, from_utc_ts) {
+	try {
+		var request = await fetch("/devices/" + device_id + "/visitors", {
+			method: "POST",
+			body: JSON.stringify({ from_utc_ts: from_utc_ts }),
+			headers: {
+				"Content-Type": "application/json"
+			},
+		})
+	} catch (e) {
+		return { today: "?", total: "?" }
+	}
+
+	if (request.status == 200) {
+		return await request.json()
+	} else {
+		var response = await request.json()
+		console.log(response)
+		return { today: "?", total: "?" }
+	}
+}
+
 async function refresh_device_list() {
 	var device_list = app.account_page.querySelector(".device-list")
 	var template = device_list.children[0]
+
+	var start_of_day = (new Date()).setHours(0, 0, 0, 0)
+	var utc_start_of_day = start_of_day + (new Date()).getTimezoneOffset()*60*1000
+	var utc_epoch_start_of_day = utc_start_of_day / 1000 >> 0
+
+	console.log(utc_epoch_start_of_day)
 
 	try {
 		var request = await fetch("/list_devices", {
@@ -49,6 +77,13 @@ async function refresh_device_list() {
 			var lsh = list_entry.querySelector(".lsh")
 			var userlabel = list_entry.querySelector(".userlabel")
 			var device_id = list_entry.querySelector(".device_id")
+			var visitors_total = list_entry.querySelector(".visitors-total")
+			var visitors_today = list_entry.querySelector(".visitors-today")
+
+			var visitors = await fetch_visitors_from(device.device_id, utc_epoch_start_of_day)
+
+			visitors_total.innerText = visitors.total
+			visitors_today.innerText = visitors.today
 
 			userlabel.innerText = device.userlabel
 			lsh.innerText = ago(new Date(device.last_seen_healthy))
