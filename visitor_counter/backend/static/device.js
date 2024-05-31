@@ -79,6 +79,7 @@ async function refresh_device_list() {
 async function init_device_page() {
 	var device_id_box = app.device_page.querySelector(".device_id")
 	var userlabel_box = app.device_page.querySelector(".userlabel")
+	var settings_form = app.device_page.querySelector("form")
 
 	device_id_box.innerText = app.device_page_state.device_id
 
@@ -94,6 +95,9 @@ async function init_device_page() {
 		var info = await request.json()
 
 		userlabel_box.innerText = info.userlabel
+		settings_form["userlabel"].value = info.userlabel
+		settings_form["entrance"].value = info.direction_of_entrance
+		settings_form["status"].value = ""
 	} else {
 		var response = await request.json()
 		console.log(response)
@@ -177,5 +181,34 @@ async function remove_device(device_id) {
 	} else {
 		var response = await request.json()
 		console.log(response)
+	}
+}
+
+async function save_device_settings(form) {
+	var fd = new FormData(form)
+
+	form["status"].value = "Please wait..."
+	form["status"].style.color = "inherit"
+
+	try {
+		var request = await fetch("/devices/" + app.device_page_state.device_id + "/settings", {
+			method: "POST",
+			body: fd
+		})
+	} catch (e) {
+		form["status"].value = "Network error"
+		form["status"].style.color = "red"
+		return
+	}
+
+	if (request.status == 200) {
+		form["status"].style.color = "green"
+		form["status"].value = "Settings saved!"
+
+		app.device_page.querySelector(".userlabel").innerText = fd.get("userlabel")
+	} else {
+		var response = await request.json()
+		form["status"].value = "Error: " + response.detail
+		form["status"].style.color = "red"
 	}
 }

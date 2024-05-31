@@ -101,11 +101,8 @@
 			</div>
 
 			<div class="device hide">
-				<h3>Device: <span class="userlabel">Front door tracker</span></h3>
-				<div>Device ID <span class="device_id">ESP32-LD2450-MMMM</span></div>
-				<button onclick="show_device_remove_page()">Remove device</button>
+				<h3>Summary for [<span class="userlabel">Front door tracker</span>]</h3>
 				<p><a href="/" onclick="return fetch_user_account(), false">Back...</a></p>
-
 				<table class="visitors4">
 					<tr>
 						<td class="w-max">
@@ -130,7 +127,32 @@
 						</td>
 					</tr>
 				</table>
-
+				<p>
+					<span>Display</span>
+					<select>
+						<option value="today">Summary over today</option>
+						<option value="all_time">Summary over all time</option>
+					</select>
+				</p>
+				<h3>Settings</h3>
+				<form onsubmit="return save_device_settings(this), false" oninput="this['status'].value = ''">
+					<p>Device ID: <span class="device_id">ESP32-LD2450-MMMM</span></p>
+					<p>
+						<span>Device label: </span>
+						<input type="text" name="userlabel" placeholder="Label...">
+					</p>
+					<p>
+						<div>Entrance is located:</div>
+						<div><label><input type="radio" name="entrance" value="u"><span>Up</span></label></div>
+						<div><label><input type="radio" name="entrance" value="d"><span>Down</span></label></div>
+						<div><label><input type="radio" name="entrance" value="l"><span>Left</span></label></div>
+						<div><label><input type="radio" name="entrance" value="r"><span>Right</span></label></div>
+					</p>
+					<input type="submit" value="Save settings">
+					<p><output name="status"></output></p>
+				</form>
+				<h3>Danger zone</h3>
+				<button onclick="show_device_remove_page()">Remove device</button>
 			</div>
 
 			<div class="device_remove hide">

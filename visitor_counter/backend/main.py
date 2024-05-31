@@ -94,6 +94,11 @@ class AddDeviceFORM():
 	device_id: str = Form(...)
 	userlabel: str = Form(...)
 
+@dataclass
+class DeviceSettingsFORM():
+	userlabel: str = Form(...)
+	entrance: str = Form(...)
+
 #######################################################################################
 # Registration, cookie based authentication
 #######################################################################################
@@ -214,6 +219,8 @@ def list_devices(current_user: User = Depends(get_current_user), db: Session = D
 # db.query(VIS4Message.runtime_random_id, func.max(VIS4Message.id), VIS4Message.d).group_by(VIS4Message.runtime_random_id).all()
 # db.query(VIS4Message.runtime_random_id, VIS4Message.id, VIS4Message.d).group_by(VIS4Message.runtime_random_id).having(func.max(VIS4Message.id)).all()
 
+# SELECT id, a, b FROM v4messages GROUP BY (ts > 1717) HAVING MAX(id);
+
 @app.get("/devices/{device_id}")
 def device_info(device_id: str, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
 	device = get_device_by_device_id(db, device_id)
@@ -229,14 +236,34 @@ def device_info(device_id: str, current_user: User = Depends(get_current_user), 
 		"device_id": device.device_id,
 		"userlabel": device.userlabel,
 		"last_seen_healthy": device.last_seen_healthy.isoformat().replace("T", "Z"),
+		"direction_of_entrance": device.direction_of_entrance,
 		"data": {
 			"time": data.time.isoformat().replace("T", "Z"),
 			"u": data.u,
 			"d": data.d,
 			"l": data.l,
 			"r": data.r
-		}
+		} if data is not None else None
 	}
+
+@app.post("/devices/{device_id}/settings")
+def device_settings(device_id: str, params: DeviceSettingsFORM = Depends(), current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+	userlabel = params.userlabel
+	direction_of_entrance = params.entrance
+
+	device = get_device_by_device_id(db, device_id)
+
+	if device is None:
+		raise HTTPException(400, "Device not found")
+
+	if device.user != current_user:
+		raise HTTPException(401, "Access denied")
+
+	device.userlabel = userlabel
+	device.direction_of_entrance = direction_of_entrance
+	db.commit()
+
+	return {"status": "ok"}
 
 @app.get("/devices/{device_id}/remove")
 def device_remove(device_id: str, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
@@ -281,7 +308,7 @@ async def handle_visitors4_data(client, topic, payload, qos, properties, db: Ses
 	device = get_device_by_device_id(db, device_id)
 
 	if device is None:
-		device = Device(device_id=device_id, userlabel="", last_seen_healthy=datetime.utcnow())
+		device = Device(device_id=device_id, userlabel="Unlabeled", direction_of_entrance="r", last_seen_healthy=datetime.utcnow())
 		db.add(device)
 
 		print(f"[Visitors4] new device online: {device_id}")

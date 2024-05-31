@@ -24,6 +24,7 @@ class Device(Base):
 	id = Column(Integer, primary_key=True, autoincrement=True)
 	device_id = Column(String(255), nullable=False, unique=True)
 	userlabel = Column(String(255), nullable=False)
+	direction_of_entrance = Column(String(1), nullable=False)
 	last_seen_healthy = Column(TIMESTAMP, nullable=False)
 	user_id = Column(Integer, ForeignKey('users.id'))
 	user = relationship("User", back_populates="devices")
