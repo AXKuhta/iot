@@ -57,8 +57,6 @@ async function refresh_device_list() {
 	var utc_start_of_day = start_of_day + (new Date()).getTimezoneOffset()*60*1000
 	var utc_epoch_start_of_day = utc_start_of_day / 1000 >> 0
 
-	console.log(utc_epoch_start_of_day)
-
 	try {
 		var request = await fetch("/list_devices", {
 			method: "POST"
