@@ -84,3 +84,8 @@ img {
 .visitors4 td {
 	min-width: 4rem;
 }
+
+.big_warning {
+	font-size: 70px;
+	padding: 0 1rem;
+}

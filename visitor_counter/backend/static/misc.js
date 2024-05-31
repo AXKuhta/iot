@@ -9,8 +9,6 @@ function ago(time) {
 
 	delta /= 1000
 
-	console.log(delta)
-
 	if (delta >= 60) {
 		delta /= 60
 		unit = "minutes"

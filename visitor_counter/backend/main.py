@@ -8,6 +8,8 @@ from fastapi_mqtt import MQTTConfig, FastMQTT
 from sqlalchemy.orm import sessionmaker, Session
 from dataclasses import dataclass
 
+import sqlalchemy
+
 import bcrypt
 import jwt
 from datetime import datetime, timedelta
@@ -235,6 +237,24 @@ def device_info(device_id: str, current_user: User = Depends(get_current_user), 
 			"r": data.r
 		}
 	}
+
+@app.get("/devices/{device_id}/remove")
+def device_remove(device_id: str, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+	device = get_device_by_device_id(db, device_id)
+
+	if device is None:
+		raise HTTPException(400, "Device not found")
+
+	if device.user != current_user:
+		raise HTTPException(401, "Access denied")
+
+	device.user = None
+	db.commit()
+
+	sqlalchemy.delete(VIS4Message).where(VIS4Message.device == device)
+	db.commit()
+
+	return {"status": "ok"}
 	
 
 #######################################################################################

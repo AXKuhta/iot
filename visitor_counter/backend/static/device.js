@@ -138,3 +138,44 @@ async function refresh_device_page() {
 		setTimeout(refresh_device_page, 5000)
 	}
 }
+
+async function init_device_remove_page(device_id) {
+	var device_id_box = app.device_remove_page.querySelector(".device_id")
+	var userlabel_box = app.device_remove_page.querySelector(".userlabel")
+
+	device_id_box.innerText = device_id
+
+	try {
+		var request = await fetch("/devices/" + device_id, {
+			method: "GET"
+		})
+	} catch (e) {
+		return
+	}
+
+	if (request.status == 200) {
+		var info = await request.json()
+
+		userlabel_box.innerText = info.userlabel
+	} else {
+		var response = await request.json()
+		console.log(response)
+	}
+}
+
+async function remove_device(device_id) {
+	try {
+		var request = await fetch("/devices/" + device_id + "/remove", {
+			method: "GET"
+		})
+	} catch (e) {
+		return
+	}
+
+	if (request.status == 200) {
+		fetch_user_account()
+	} else {
+		var response = await request.json()
+		console.log(response)
+	}
+}

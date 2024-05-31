@@ -62,7 +62,7 @@
 					</tr>
 				</table>
 				<div class="device-list">
-					<div class="device-list-entry hide" onclick="show_device_page(this)">
+					<div class="device-list-entry hide" onclick="show_device_page(this.querySelector('.device_id').innerText)">
 						<table>
 							<tr>
 								<td class="device-icon"></td>
@@ -103,6 +103,7 @@
 			<div class="device hide">
 				<h3>Device: <span class="userlabel">Front door tracker</span></h3>
 				<div>Device ID <span class="device_id">ESP32-LD2450-MMMM</span></div>
+				<button onclick="show_device_remove_page()">Remove device</button>
 				<p><a href="/" onclick="return fetch_user_account(), false">Back...</a></p>
 
 				<table class="visitors4">
@@ -130,6 +131,21 @@
 					</tr>
 				</table>
 
+			</div>
+
+			<div class="device_remove hide">
+				<h3>Remove device</h3>
+				<p><a href="/" onclick="return show_device_page(app.device_page_state.device_id), false">Back...</a></p>
+				<table>
+					<tr>
+						<td><h1 class="big_warning">⚠️</h1></td>
+						<td>
+							<p>Are you sure you want to remove <b class="userlabel">Front door counter</b> (<span class="device_id">ESP32-LD2450-MMMM</span>)?</p>
+							<p>You can re-add this device at any time but all <b>historical data will be lost</b> after removing.</p>
+							<p><button onclick="remove_device(app.device_page_state.device_id)">Yes, remove it</button></p>
+						</td>
+					</tr>
+				</table>
 			</div>
 		</div>
 	</main>
