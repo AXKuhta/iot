@@ -136,43 +136,65 @@ async function init_device_page() {
 		console.log(response)
 	}
 
+	refresh_device_page_loop()
+}
+
+function refresh_device_page_loop() {
 	refresh_device_page()
+
+	if (app.device_page.classList.contains("hide")) {
+		// Stop
+	} else {
+		setTimeout(refresh_device_page_loop, 5000)
+	}
 }
 
 async function refresh_device_page() {
+	var mode = app.device_page.querySelector(".summary_mode")
 	var time = app.device_page.querySelector(".time")
 	var u = app.device_page.querySelector(".u")
 	var d = app.device_page.querySelector(".d")
 	var l = app.device_page.querySelector(".l")
 	var r = app.device_page.querySelector(".r")
 
+	var from_utc_ts = 0
+
+	if (mode.value == "today") {
+		var start_of_day = (new Date()).setHours(0, 0, 0, 0)
+		var utc_start_of_day = start_of_day + (new Date()).getTimezoneOffset()*60*1000
+		var utc_epoch_start_of_day = utc_start_of_day / 1000 >> 0
+
+		from_utc_ts = utc_epoch_start_of_day
+	}
+
 	try {
-		var request = await fetch("/devices/" + app.device_page_state.device_id, {
-			method: "GET"
+		var request = await fetch("/devices/" + app.device_page_state.device_id + "/visitors_full", {
+			method: "POST",
+			body: JSON.stringify({ from_utc_ts: from_utc_ts }),
+			headers: {
+				"Content-Type": "application/json"
+			},
 		})
 	} catch (e) {
 		return
 	}
 
 	if (request.status == 200) {
-		var info = await request.json()
+		var response = await request.json()
 
-		time.innerText = timefmt.format(new Date(info.data.time))
-		u.innerText = +info.data.u
-		d.innerText = +info.data.d
-		l.innerText = +info.data.l
-		r.innerText = +info.data.r
+		var since = timefmt.format(new Date(response.recent.since))
+		var until = timefmt.format(new Date(response.recent.until))
+
+		time.innerHTML = `${since}&ndash;<br>${until}`
+		u.innerText = response.recent.u
+		d.innerText = response.recent.d
+		l.innerText = response.recent.l
+		r.innerText = response.recent.r
 	} else if (request.status == 401) {
 		return fetch_user_account()
 	} else {
 		var response = await request.json()
 		console.log(response)
-	}
-
-	if (app.device_page.classList.contains("hide")) {
-		// Stop
-	} else {
-		setTimeout(refresh_device_page, 5000)
 	}
 }
 

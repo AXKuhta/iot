@@ -28,6 +28,6 @@ function ago(time) {
 }
 
 var timefmt = new Intl.DateTimeFormat(undefined, {
-	dateStyle: "medium",
+	dateStyle: "short",
 	timeStyle: "short",
 })

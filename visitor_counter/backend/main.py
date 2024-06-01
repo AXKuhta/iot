@@ -221,11 +221,6 @@ def list_devices(current_user: User = Depends(get_current_user), db: Session = D
 
 	return device_list
 
-# db.query(VIS4Message.runtime_random_id, func.max(VIS4Message.id), VIS4Message.d).group_by(VIS4Message.runtime_random_id).all()
-# db.query(VIS4Message.runtime_random_id, VIS4Message.id, VIS4Message.d).group_by(VIS4Message.runtime_random_id).having(func.max(VIS4Message.id)).all()
-
-# SELECT id, a, b FROM v4messages GROUP BY (ts > 1717) HAVING MAX(id);
-
 @app.get("/devices/{device_id}")
 def device_info(device_id: str, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
 	device = get_device_by_device_id(db, device_id)
@@ -242,14 +237,7 @@ def device_info(device_id: str, current_user: User = Depends(get_current_user), 
 		"device_id": device.device_id,
 		"userlabel": device.userlabel,
 		"last_seen_healthy": device.last_seen_healthy.isoformat().replace("T", "Z"),
-		"direction_of_entrance": device.direction_of_entrance,
-		"data": {
-			"time": data.time.isoformat().replace("T", "Z"),
-			"u": data.u,
-			"d": data.d,
-			"l": data.l,
-			"r": data.r
-		} if data is not None else None
+		"direction_of_entrance": device.direction_of_entrance
 	}
 
 @app.post("/devices/{device_id}/visitors")
@@ -281,25 +269,6 @@ def device_visitors(device_id: str, params:VisitorsRqJSON, current_user: User = 
 	else:
 		raise HTTPException(400, "??")
 
-	"""
-	return {
-		"atime": a.time,
-		"btime": b.time,
-		"after": {
-			"u": ut,
-			"d": dt,
-			"l": lt,
-			"r": rt
-		},
-		"total": {
-			"u": b.u,
-			"d": b.d,
-			"l": b.l,
-			"r": b.r,
-		}
-	}
-	"""
-
 	directions = {
 		"u": { "today": ut, "total": b.u },
 		"d": { "today": dt, "total": b.d },
@@ -308,6 +277,51 @@ def device_visitors(device_id: str, params:VisitorsRqJSON, current_user: User = 
 	}
 
 	return directions[device.direction_of_entrance]
+
+@app.post("/devices/{device_id}/visitors_full")
+def device_visitors_full(device_id: str, params:VisitorsRqJSON, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+	device = get_device_by_device_id(db, device_id)
+
+	if device is None:
+		raise HTTPException(400, "Device not found")
+
+	if device.user != current_user:
+		raise HTTPException(401, "Access denied")
+
+	data = db.query(VIS4Message).filter(VIS4Message.device == device).group_by(VIS4Message.time >= datetime.fromtimestamp(params.from_utc_ts)).having(func.max(VIS4Message.time)).all()
+	first_data = db.query(VIS4Message).filter(VIS4Message.device == device).first()
+
+	if len(data) == 2:
+		a = data[0]
+		b = data[1]
+	elif len(data) == 1:
+		a = first_data
+		b = data[0]
+	else:
+		raise HTTPException(400, "??")
+
+	ut = b.u - a.u
+	dt = b.d - a.d
+	lt = b.l - a.l
+	rt = b.r - a.r
+
+	return {
+		"recent": {
+			"since": a.time.isoformat().replace("T", "Z"),
+			"until": b.time.isoformat().replace("T", "Z"),
+			"u": ut,
+			"d": dt,
+			"l": lt,
+			"r": rt
+		},
+		"total": {
+			"since": first_data.time.isoformat().replace("T", "Z"),
+			"u": b.u,
+			"d": b.d,
+			"l": b.l,
+			"r": b.r,
+		}
+	}
 
 @app.post("/devices/{device_id}/settings")
 def device_settings(device_id: str, params: DeviceSettingsFORM = Depends(), current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):

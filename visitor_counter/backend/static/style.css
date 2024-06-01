@@ -80,13 +80,20 @@ img {
 .device-list-entry:hover .device-icon {
 	background-color: #F0F0F0;
 }
-
 .muted {
 	opacity: 0.5;
 }
 
 .visitors4 td {
 	min-width: 4rem;
+}
+
+.visitors4 h1 {
+	margin: 0;
+}
+
+.visitors4 h3 {
+	margin: 0;
 }
 
 .big_warning {
